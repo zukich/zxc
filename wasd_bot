@@ -1,0 +1,236 @@
+import webbrowser
+from ast import main
+from turtledemo.forest import start
+
+import telebot
+from aiogram import types
+from aiogram.handlers import MessageHandler
+from telebot import types
+from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton
+from telegram.ext import CallbackContext, CommandHandler, Updater
+
+bot = telebot.TeleBot('7805604746:AAGt9_IXqUFGtAld7IX5JCx-eO-I9aNLusI')
+
+
+
+# Класс для хранения состояний меню
+class MenuState:
+    MAIN = 'main'
+    SUB_MENU = 'sub_menu'
+
+
+current_state = MenuState.MAIN  # Текущее состояние меню
+last_message_id = None
+
+
+
+@bot.message_handler(commands=['site python', 'python'])
+def site(message):
+    webbrowser.open('https://www.python.org/')
+
+
+@bot.message_handler(commands=['java', "java site"])
+def java(message):
+    webbrowser.open("https://www.java.com/ru/")
+
+
+@bot.message_handler(commands=["c++", "c++ site", 'c'])
+def с(message):
+    webbrowser.open("https://learn.microsoft.com/ru-ru/cpp/cpp/?view=msvc-170")
+
+
+@bot.message_handler(commands=['start'])
+def send_message_with_list(message):
+    markup = types.ReplyKeyboardMarkup(row_width=1)
+    btn1 = types.KeyboardButton('Menu')
+    markup.row(btn1)
+
+
+
+    global last_message_id
+    global current_state
+    current_state = MenuState.MAIN
+
+    if last_message_id:
+        bot.delete_message(message.chat.id, last_message_id)
+
+    sent_message = bot.send_message(message.chat.id,
+                                    "<b>Hi, if you are interested in the profession of a programmer or want to become a programmer, then this information may be useful to you.</b>",
+                                    reply_markup=markup, parse_mode="html")
+    last_message_id = sent_message.message_id
+
+@bot.message_handler(func=lambda message: message.text == "Menu" and current_state == MenuState.MAIN)
+def send_list(message):
+    global last_message_id
+
+    global current_state
+    current_state = MenuState.SUB_MENU
+
+
+
+
+
+    btn1 = types.InlineKeyboardButton('Required skills', callback_data="")
+    markup = (telebot.types.ReplyKeyboardMarkup(row_width=1))
+    btn4 = (types.InlineKeyboardButton('Programming languages', callback_data=""))
+    btn9 = (types.InlineKeyboardButton('Places of qualification', callback_data=""))
+    markup.row(btn4,btn1, btn9)
+
+    if last_message_id:
+        bot.delete_message(message.chat.id, last_message_id)
+        sent_message = bot.send_message(message.chat.id, f'<b>Check out the menu.</b>', reply_markup=markup,
+                                        parse_mode='html')
+        last_message_id = sent_message.message_id
+
+
+
+
+
+
+def sub_menu(update: Update) -> None:
+    keyboard = [
+        [KeyboardButton("Back")],
+        [KeyboardButton("Другая опция")]
+    ]
+    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+    update.message.reply_text("Подменю:", reply_markup=reply_markup)
+
+
+# Обработка текстовых сообщений
+def main_menu(update: Update) -> None:
+    keyboard = [
+        [KeyboardButton("Menu")],
+        [KeyboardButton("Back")]
+    ]
+    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+    update.message.reply_text("Menu:", reply_markup=reply_markup)
+
+
+
+
+
+
+
+@bot.message_handler(func=lambda message: message.text == 'Places of qualification')
+def send_list(message):
+    markup = telebot.types.ReplyKeyboardMarkup(row_width=1)
+    btn9 = (types.InlineKeyboardButton("scores", callback_data='12'))
+    btn10 = (types.InlineKeyboardButton("Back", callback_data="d11"))
+
+    markup.row(btn9, btn10)
+
+
+
+    list_items = "1.St.Petersburg State Institute pf Technology.\n2.Peter the Great St Petersburg Polytechnic University.\n3. St. Petersburg State University of Economic."
+    bot.send_message(message.chat.id,
+                     f'<b>Here are the institutes where you can get an education as a programmer:\n{list_items}</b>',
+                     reply_markup=markup, parse_mode="html")
+
+
+
+
+@bot.message_handler(func=lambda message: message.text == 'Programming languages')
+def send_languages_list(message):
+
+    global last_message_id
+    def handle_message(update: Update, context: CallbackContext) -> None:
+        text = update.message.text
+
+        if text == "Menu":
+            sub_menu(update)
+        elif text == "back":
+            main_menu(update)
+        elif text == "Exit":
+            update.message.reply_text("Вы вышли из бота.")
+        elif text == "Другая опция":
+            update.message.reply_text("Вы выбрали другую опцию.")
+     
+
+
+    # Delete the last message if it was sent
+    if last_message_id:
+        bot.delete_message(message.chat.id, last_message_id)
+
+
+    btn11 = (types.InlineKeyboardButton('Python', callback_data=""))
+    markup = telebot.types.ReplyKeyboardMarkup(row_width=1)
+    btn12 = (types.InlineKeyboardButton('Java', callback_data=""))
+    btn13 = (types.InlineKeyboardButton('C++', callback_data=""))
+    btn16 = (types.InlineKeyboardButton('back'))
+    markup.row(btn11,btn12,btn13, btn16)
+    bot.send_message(message.chat.id, f"<b>Top 3 programming languages.</b>" , reply_markup=markup, parse_mode='html')
+
+    @bot.message_handler(func=lambda message: current_state == MenuState.SUB_MENU)
+    def handler_sub_menu_options(message):
+        if message.text == "back":
+            global current_state
+            current_state = MenuState.MAIN  # Возвращаемся к главному меню
+            send_message_with_list(message)  # Отправляем сообщение с главным меню
+
+
+
+@bot.message_handler( func=lambda message: message.text == 'scores')
+def send_list(message):
+    list_items = "1.St.Petersburg State Institute pf Technology-147.\n2.Peter the Great St Petersburg Polytechnic University-94.\n3 St. Petersburg State University of Economic-83 . All points are summed up from the results of the EGE in subjects such as physics, computer science , and core mathematics."
+    bot.send_message(message.chat.id, F"<b>scores:\n{list_items}</b>", parse_mode='html')
+
+
+@bot.message_handler(func=lambda message: message.text == 'Python')
+def send_list(message):
+    list_items = "1.Web development. Python is used to create web applications and websites, data management systems, and auxiliary tools for working with the Web.\n2.Desktop development. Powerful applications and infrastructures were created in Python, such as the GIMP image editor, the Ubuntu application store, and 3D graphics editors.\n3. Mobile development. Python is most often used for the server side of iOS and Android applications, and Python is often responsible for the backend (the internal logic of the program).\n4. Video games. Python is used in game development because of the ability to create reliable and thoughtful scripts using the language.\n5. Science. Experts use Python to write full-featured neural networks, program robot behavior, and create data analysis systems on the Internet capable of processing huge amounts of text and numbers.\n. The main advantage of Python is the simplicity of syntax and commands, as well as a large number of libraries that contain already written program code for solving a wide range of tasks. "
+    bot.send_message(message.chat.id,
+                     f"<b>Python is a general—purpose programming language. It is widely used in various fields, for example:\n{list_items}</b>",
+                     parse_mode="html")
+
+
+@bot.message_handler(func=lambda message: message.text == 'Java')
+def send_list(message):
+    list_items = "1.Create powerful and scalable web applications. For example, using Apache Struts and the Spring Framework.\n2. Development of mobile applications for the Android platform. Java is the main programming language for creating Android applications.\n3. Creation of corporate applications and information systems. For example, the Enterprise JavaBeans (EJB) platform provides structures and services for enterprise software development.\n4. Scientific research and data analysis. Projects like Apache Hadoop and Apache Spark provide powerful tools for processing and analyzing large amounts of data using Java.\n5. The gaming industry. Many online games are created using Java, for example, the Minecraft game.\n6. Creation of financial applications, trading systems and exchange platforms. Many banks and financial institutions use Java to ensure the reliability and high performance of their systems.\n7. Developing applications for smart devices and the Internet of Things. Java cross-platform allows you to write software for any device. "
+    bot.send_message(message.chat.id, f'<b>Java is used in various fields, for example:\n{list_items}</b>',
+                     parse_mode='html')
+
+
+@bot.message_handler(func=lambda message: message.text == 'C++')
+def send_list(message):
+    list_items = "1.Game development. C++ allows programmers to have control over hardware resources and system layers, which is important for optimizing performance in games.\n2. System programming. Operating systems, device drivers, and other system utilities are developed in C++.\n3. Embedded systems. This area requires high performance and efficient use of resources, and C++ is often the choice for such tasks.\n4. Financial programming. For high-frequency trading and quantum research, C++ can offer the speed needed to efficiently execute transactions.\n5. Working with 3D graphics. Systems for working with three-dimensional graphics, such as computer-aided design (CAD) systems, are often written in C++.\n6. Compiler development. Many modern compilers are developed using C++ because of its performance and feature set.\n7. Scientific research. C++ is often used in scientific research where fast numerical and analytical calculations are required.\n8. Network programming. Network protocols and complex network applications are also often developed in C++.\n7. Safety. Network security tools such as antiviruses and package inspectors are often written in C++.\n9. Mobile development. C++ can be used to write high-performance mobile applications. "
+    bot.send_message(message.chat.id, f"<b>Some applications of the C++ programming language:\n{list_items}</b>",
+                     parse_mode='html')
+
+
+@bot.message_handler(func=lambda message: message.text == 'Required skills')
+def send_list(message):
+    list_items = "1.Knowledge of programming languages.\n2. Understanding algorithms and data structures.\n3. The ability to debug code.\n4. Algorithms and data structures.\n5.Knowledge of operating systems.\n6.Working with databases."
+    bot.send_message(message.chat.id, f"<b>Here are the necessary skills:\n{list_items}</b>", parse_mode="html")
+
+
+
+
+@bot.message_handler(func=lambda message: current_state == MenuState.SUB_MENU)
+def handler_sub_menu_options(message):
+    if message.text == "Back":
+        global current_state
+        current_state = MenuState.MAIN  # Возвращаемся к главному меню
+    
+
+
+def main():
+
+    updater = Updater
+
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler('start', start))
+
+
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+
+
+
+
+
+ bot.polling(none_stop=True)
+
