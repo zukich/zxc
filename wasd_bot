@@ -7,22 +7,29 @@ from aiogram import types
 from aiogram.handlers import MessageHandler
 from telebot import types
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton
+from telegram._utils import markup
 from telegram.ext import CallbackContext, CommandHandler, Updater
 
-bot = telebot.TeleBot('')
+bot = telebot.TeleBot()
 
 
 
 # Класс для хранения состояний меню
+
+
 class MenuState:
     MAIN = 'main'
     SUB_MENU = 'sub_menu'
+    PROGRAMMING_LANGUAGES = 'programming_languages'
+    PLACES_OF_QUALIFICATION = 'places_of_qualification'
+    REQUIRED_SKILLS = 'required_skills'
+
 
 
 current_state = MenuState.MAIN  # Текущее состояние меню
 last_message_id = None
 
-
+state_stack = []
 
 @bot.message_handler(commands=['site python', 'python'])
 def site(message):
@@ -44,6 +51,8 @@ def send_message_with_list(message):
     markup = types.ReplyKeyboardMarkup(row_width=1)
     btn1 = types.KeyboardButton('Menu')
     markup.row(btn1)
+
+    state_stack.clear()
 
 
 
@@ -76,11 +85,29 @@ def send_list(message):
     btn9 = (types.InlineKeyboardButton('Places of qualification', callback_data=""))
     markup.row(btn4,btn1, btn9)
 
-    if last_message_id:
-        bot.delete_message(message.chat.id, last_message_id)
-        sent_message = bot.send_message(message.chat.id, f'<b>Check out the menu.</b>', reply_markup=markup,
-                                        parse_mode='html')
-        last_message_id = sent_message.message_id
+    state_stack.append(MenuState.SUB_MENU)  # Push the current state into the stack
+
+    bot.send_message(message.chat.id, "<b>Sub Menu:</b>", reply_markup=markup, parse_mode='html')
+
+
+
+
+
+
+def send_sub_menu(message):
+    pass
+
+
+@bot.message_handler(func=lambda message: message.text == "Check out the menu")
+
+@bot.message_handler(func=lambda message: message.text == 'Back')
+def go_back(message):
+    if state_stack:
+        last_state = state_stack.pop()  # Pop the last state
+        if last_state == MenuState.MAIN:
+            send_list(message)  # Show main menu again
+        elif last_state == MenuState.SUB_MENU:
+            send_sub_menu(message)  # Your function for the sub menu (if you had it defined)
 
 
 
@@ -160,6 +187,8 @@ def send_languages_list(message):
     markup.row(btn11,btn12,btn13, btn16)
     bot.send_message(message.chat.id, f"<b>Top 3 programming languages.</b>" , reply_markup=markup, parse_mode='html')
 
+    state_stack.append(MenuState.PROGRAMMING_LANGUAGES)
+
     @bot.message_handler(func=lambda message: current_state == MenuState.SUB_MENU)
     def handler_sub_menu_options(message):
         if message.text == "back":
@@ -201,6 +230,7 @@ def send_list(message):
 def send_list(message):
     list_items = "1.Knowledge of programming languages.\n2. Understanding algorithms and data structures.\n3. The ability to debug code.\n4. Algorithms and data structures.\n5.Knowledge of operating systems.\n6.Working with databases."
     bot.send_message(message.chat.id, f"<b>Here are the necessary skills:\n{list_items}</b>", parse_mode="html")
+    state_stack.append(MenuState.REQUIRED_SKILLS)
 
 
 
@@ -213,24 +243,8 @@ def handler_sub_menu_options(message):
     
 
 
-def main():
-
-    updater = Updater
-
-    dp = updater.dispatcher
-
-    dp.add_handler(CommandHandler('start', start))
 
 
-
-    updater.start_polling()
-    updater.idle()
 
 if __name__ == '__main__':
-
-
-
-
-
- bot.polling(none_stop=True)
-
+    bot.polling(none_stop=True, skip_pending=True)
