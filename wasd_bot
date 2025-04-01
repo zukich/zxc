@@ -9,7 +9,7 @@ from telebot import types
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import CallbackContext, CommandHandler, Updater
 
-bot = telebot.TeleBot('7805604746:AAGt9_IXqUFGtAld7IX5JCx-eO-I9aNLusI')
+bot = telebot.TeleBot('')
 
 
 
